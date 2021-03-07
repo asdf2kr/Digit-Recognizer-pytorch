@@ -32,17 +32,17 @@ def main(args):
 
     """ Load the training model """
     if args.arch == "efficient-l2":
-        model = efficient.efficientL2(num_classes=num_classes)
+        model = efficient.efficientL2(num_classes=args.num_classes)
     elif args.arch == 'resnet18':
-        model = resnet.resnet18(num_classes=num_classes)
+        model = resnet.resnet18(num_classes=args.num_classes)
     elif args.arch == 'resnet34':
-        model = resnet.resnet34(num_classes=num_classes)
+        model = resnet.resnet34(num_classes=args.num_classes)
     elif args.arch == 'resnet50':
-        model = resnet.resnet50(num_classes=num_classes)
+        model = resnet.resnet50(num_classes=args.num_classes)
     elif args.arch == 'resnet101':
-        model = resnet.resnet101(num_classes=num_classes)
+        model = resnet.resnet101(num_classes=args.num_classes)
     elif args.arch == 'resnet152':
-        model = resnet.resnet152(num_classes=num_classes)
+        model = resnet.resnet152(num_classes=args.num_classes)
 
     """ Set specified HW """
     model = torch.nn.DataParallel(model.to(device))
@@ -57,7 +57,7 @@ def main(args):
 
     print('[Info] Total parameters {} '.format(count_parameters(model)))
 
-    if args.resume or args.test:
+    if args.resume or args.mode == "test":
         print('[Info] Loading checkpoint.')
         checkpoint = load_checkpoint(args.save)
         arch = checkpoint['arch']
@@ -67,21 +67,21 @@ def main(args):
         print('[Info] epoch {} arch {}'.format(args.epoch, arch))
 
     """ run evaluate """
-    if args.evaluate:
+    if args.mode == "evaluate":
         _ = run_epoch(model, 'valid', [args.epoch, args.epoch], criterion, optimizer, valid_loader, valid_size, device)
         return
 
     """ run train """
     best_acc1 = 0.
-    for e in range(args.epoch, args.n_epochs + 1):
+    for e in range(args.epoch, args.epochs + 1):
         adjust_learning_rate(optimizer, e, args)
 
         """ train for one epoch """
-        _ = run_epoch(model, 'train', [e, args.n_epochs], criterion, optimizer, train_loader, train_size, device)
+        _ = run_epoch(model, 'train', [e, args.epochs], criterion, optimizer, train_loader, train_size, device)
 
         """ evaluate on validation set """
         with torch.no_grad():
-            acc1 = run_epoch(model, 'valid', [e, args.n_epochs], criterion, optimizer, valid_loader, valid_size, device)
+            acc1 = run_epoch(model, 'valid', [e, args.epochs], criterion, optimizer, valid_loader, valid_size, device)
 
         # Save checkpoint.
         is_best = acc1 > best_acc1
