@@ -11,8 +11,8 @@ from sklearn.model_selection import train_test_split
 class MNIST(Dataset):
     def __init__(self, images, labels, transform=None):
         self.images = images
-        self.labels = labels
-        self.transform = transforms
+        self.labels = labels.values
+        self.transform = transform
 
     def __len__(self):
         return len(self.images)
@@ -20,13 +20,13 @@ class MNIST(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
-        # img = frame.iloc[idx, 1:].astype(np.uint8).valeus.reshape(28, 28)
-        # label = frame.iloc[idx, 0].astype(np.uint8).values
-        img = np.array(frame.iloc[idx, :]).astype(np.uint8).reshape(-1, 28, 28)
+        img = np.array(self.images.iloc[idx, :]).astype(np.uint8).reshape(-1, 28, 28)
+
         if self.transform:
             img = self.transform(img)
+
         if self.labels is not None:
-            return (self.labels[i], img)
+            return img, self.labels[idx]
         else:
             return img
 
@@ -41,7 +41,6 @@ def prepare_dataloaders(args):
                                                                             test_size = 0.1)
     train_transform = torchvision.transforms.Compose([
                                 transforms.ToPILImage(),
-                                transforms.RandomCrop(28),
                                 transforms.ToTensor(),
                                 transforms.Normalize(mean=[0.5], # 1 for grayscale channels
                                                     std=[0.5])
@@ -73,6 +72,7 @@ def prepare_dataloaders(args):
 
 
     return train_loader, valid_loader, len(train_dataset), len(valid_dataset)
+
 
 def prepare_test_dataloaders(args):
     data_path = os.path.join(os.getcwd(), 'Datas')
